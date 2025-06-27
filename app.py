@@ -18,7 +18,7 @@ def whatsapp_webhook():
     else:
         reply = (
             "❗ Please send a voice note or audio file.\n"
-            "Supported formats: `.ogg`, `.mp3`, `.wav`"
+            "Supported formats: .ogg, .mp3, .wav"
         )
 
     return Response(f"""
