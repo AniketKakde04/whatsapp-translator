@@ -1,42 +1,38 @@
 import os
 import requests
-from urllib.parse import urlparse
+from pydub import AudioSegment
 from google import genai
 
-# Gemini client uses API key from environment
 client = genai.Client()
 
-def is_supported_audio(media_url):
-    if not media_url:
-        return False
-    path = urlparse(media_url).path
-    return path.endswith(".mp3") or path.endswith(".wav")
-
 def transcribe_and_translate(media_url):
-    file_name = "audio.mp3"  # Works for .wav too
-
     try:
-        print("Downloading audio from:", media_url)
-        response = requests.get(media_url)
-        with open(file_name, "wb") as f:
-            f.write(response.content)
+        # Step 1: Download the audio
+        audio_ogg = "audio.ogg"
+        audio_wav = "audio.wav"
+        r = requests.get(media_url)
+        with open(audio_ogg, "wb") as f:
+            f.write(r.content)
 
-        print("Uploading to Gemini...")
-        uploaded = client.files.upload(file=file_name)
+        # Step 2: Convert OGG to WAV using pydub
+        audio = AudioSegment.from_file(audio_ogg)
+        audio.export(audio_wav, format="wav")
 
+        # Step 3: Upload to Gemini and translate
+        upload = client.files.upload(file=audio_wav)
         prompt = (
             "Transcribe and translate this audio file:\n"
-            "1. Show the transcription in the original language.\n"
-            "2. Provide the English translation."
+            "1. Transcription in original language.\n"
+            "2. English translation."
         )
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=[prompt, uploaded]
+            contents=[prompt, upload]
         )
 
         return response.text.strip()
 
     except Exception as e:
-        print("Error:", str(e))
-        return "❌ Error processing the audio: " + str(e)
+        print("ERROR:", e)
+        return "❌ Error processing the voice note."
