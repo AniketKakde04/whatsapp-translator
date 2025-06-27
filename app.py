@@ -10,10 +10,17 @@ def whatsapp_webhook():
     media_url = request.form.get("MediaUrl0")
     media_type = request.form.get("MediaContentType0")
 
-    if media_url and "audio" in media_type:
+    print("Media URL:", media_url)
+    print("Media Type:", media_type)
+
+    # Only accept MP3 or WAV
+    if media_url and media_type in ["audio/mpeg", "audio/wav"]:
         reply = transcribe_and_translate(media_url)
     else:
-        reply = "Please send a voice note to translate."
+        reply = (
+            "❗ Voice notes (.ogg) are not supported.\n\n"
+            "Please send an audio file in `.mp3` or `.wav` format instead."
+        )
 
     return Response(f"""
         <Response>
