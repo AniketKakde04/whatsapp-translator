@@ -1,5 +1,5 @@
 from flask import Flask, request, Response
-from utils import transcribe_and_translate
+from utils import transcribe_and_translate, is_supported_audio
 import os
 
 app = Flask(__name__)
@@ -13,13 +13,12 @@ def whatsapp_webhook():
     print("Media URL:", media_url)
     print("Media Type:", media_type)
 
-    # Only accept MP3 or WAV
-    if media_url and media_type in ["audio/mpeg", "audio/wav"]:
+    if is_supported_audio(media_url):
         reply = transcribe_and_translate(media_url)
     else:
         reply = (
             "❗ Voice notes (.ogg) are not supported.\n\n"
-            "Please send an audio file in `.mp3` or `.wav` format instead."
+            "👉 Please send an audio file in `.mp3` or `.wav` format as an attachment (not a voice note)."
         )
 
     return Response(f"""
