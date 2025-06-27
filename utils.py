@@ -3,36 +3,37 @@ import requests
 import subprocess
 from google import genai
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-client = genai.GenerativeModel("gemini-2.0-flash")
+client = genai.GenerativeModel(
+    model_name="gemini-2.0-flash",
+    api_key=os.getenv("GEMINI_API_KEY")
+)
 
 def transcribe_and_translate(media_url):
-    # Step 1: Download OGG file from Twilio
     audio_path_ogg = "audio.ogg"
     audio_path_wav = "audio.wav"
 
+    # Step 1: Download audio from Twilio
     response = requests.get(media_url)
     with open(audio_path_ogg, "wb") as f:
         f.write(response.content)
 
-    # Step 2: Convert OGG to WAV using ffmpeg
+    # Step 2: Convert OGG to WAV
     result = subprocess.run([
-        "ffmpeg", "-y",
-        "-i", audio_path_ogg,
-        audio_path_wav
+        "ffmpeg", "-y", "-i", audio_path_ogg, audio_path_wav
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if result.returncode != 0:
-        return "Error: Audio conversion failed. Ensure ffmpeg is installed."
+        return "Error: Failed to convert audio to WAV."
 
-    # Step 3: Upload to Gemini for transcription + translation
+    # Step 3: Use Gemini to transcribe and translate
     prompt = (
         "Transcribe the following audio.\n"
-        "1. Provide the transcription in the original language.\n"
-        "2. Provide an English translation."
+        "1. First, provide the transcription in the original language.\n"
+        "2. Then, translate it to English."
     )
 
-    upload = client.upload_file(audio_path_wav)
-    response = client.generate_content([prompt, upload])
+    # Upload and send to Gemini
+    uploaded = client.upload_file(audio_path_wav)
+    response = client.generate_content([prompt, uploaded])
 
     return response.text.strip()
