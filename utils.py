@@ -1,29 +1,34 @@
 import os
 import requests
-from pydub import AudioSegment
+import subprocess
 from google import genai
 
 client = genai.Client()
 
 def transcribe_and_translate(media_url):
+    ogg_file = "audio.ogg"
+    wav_file = "audio.wav"
+
     try:
-        # Step 1: Download the audio
-        audio_ogg = "audio.ogg"
-        audio_wav = "audio.wav"
-        r = requests.get(media_url)
-        with open(audio_ogg, "wb") as f:
-            f.write(r.content)
+        # Step 1: Download audio file
+        response = requests.get(media_url)
+        with open(ogg_file, "wb") as f:
+            f.write(response.content)
 
-        # Step 2: Convert OGG to WAV using pydub
-        audio = AudioSegment.from_file(audio_ogg)
-        audio.export(audio_wav, format="wav")
+        # Step 2: Convert OGG to WAV using ffmpeg
+        result = subprocess.run([
+            "ffmpeg", "-y", "-i", ogg_file, wav_file
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        # Step 3: Upload to Gemini and translate
-        upload = client.files.upload(file=audio_wav)
+        if result.returncode != 0:
+            return "❌ Error: Audio conversion failed. FFmpeg may not be installed."
+
+        # Step 3: Upload to Gemini
+        upload = client.files.upload(file=wav_file)
         prompt = (
             "Transcribe and translate this audio file:\n"
-            "1. Transcription in original language.\n"
-            "2. English translation."
+            "1. Transcribe in the original language.\n"
+            "2. Translate to English."
         )
 
         response = client.models.generate_content(
@@ -34,5 +39,5 @@ def transcribe_and_translate(media_url):
         return response.text.strip()
 
     except Exception as e:
-        print("ERROR:", e)
-        return "❌ Error processing the voice note."
+        print("❌ Exception:", e)
+        return "❌ Error processing audio: " + str(e)
