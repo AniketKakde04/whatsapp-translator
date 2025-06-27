@@ -13,7 +13,7 @@ def whatsapp_webhook():
     if media_url and "audio" in media_type:
         reply = transcribe_and_translate(media_url)
     else:
-        reply = "Please send a voice note."
+        reply = "Please send a voice note to translate."
 
     return Response(f"""
         <Response>
@@ -22,4 +22,5 @@ def whatsapp_webhook():
     """, mimetype="text/xml")
 
 if __name__ == "__main__":
-    app.run()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
